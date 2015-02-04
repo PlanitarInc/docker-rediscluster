@@ -1,0 +1,44 @@
+#!/bin/bash
+
+. ./lib.sh
+
+# node <CMD> <ID> [options]
+cmd="$1"; shift
+id="$1"; shift
+name="$(get_name redis "$id")"
+
+case "$cmd" in
+  "add")
+    docker run --name $name -t -d -i planitar/redis
+    log "Redis node created: $name ($(d_ip $name):6379)"
+    if [ $# -gt 0 ]; then
+      ./node join $id $1
+    fi
+    ;;
+
+  "rem")
+    if [ "$id" == all ]; then
+      d_rma redis
+      log "Redis nodes removed: redis.*"
+    else
+      docker rm -f $name
+      log "Redis node removed: $name"
+    fi
+    ;;
+
+  "join")
+    mastername=$(get_name redis $1)
+    masterip=$(d_ip $mastername)
+    ./node cli $id slaveof $masterip 6379
+    log "Redis node $name joined $mastername ($masterip:6379)"
+    ;;
+
+  "cli")
+    redis-cli -h $(d_ip $name) -p 6379 "$@"
+    ;;
+
+  "name")
+    echo $name
+    ;;
+
+esac

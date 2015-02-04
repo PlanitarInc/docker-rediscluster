@@ -1,0 +1,52 @@
+#!/bin/bash
+
+. ./lib.sh
+
+# sentinel <CMD> <ID> [options]
+cmd="$1"; shift
+id="$1"; shift
+name="$(get_name sentinel "$id")"
+port=$[ 63790 + $id ]
+
+case "$cmd" in
+  "add")
+    docker run --name $name -d -p $port:26379 \
+      planitar/redis redis-sentinel /etc/redis/sentinel.conf \
+        --sentinel announce-ip $DOCKER_IP \
+	--sentinel announce-port $port
+    log "Redis sentinel created: $name ($(d_ip $name):6379)"
+
+    if [ $# -gt 0 ]; then
+      ./sentinel monitor $id $1
+    fi
+    ;;
+
+  "rem")
+    if [ "$id" == all ]; then
+      d_rma sentinel
+      log "Redis sentinels removed: sentinel.*"
+    else
+      docker rm -f $name
+      log "Redis sentinel removed: $name"
+    fi
+    ;;
+
+  "monitor")
+    nodename=$(./node name $1)
+    nodeip=$(d_ip $nodename)
+    nodeport=6379
+
+    redis-cli -h $DOCKER_IP -p $port sentinel monitor redis-master $nodeip $nodeport 2
+    redis-cli -h $DOCKER_IP -p $port sentinel set redis-master down-after-milliseconds 1000
+    redis-cli -h $DOCKER_IP -p $port sentinel set redis-master failover-timeout 1000
+    redis-cli -h $DOCKER_IP -p $port sentinel set redis-master parallel-syncs 1
+    redis-cli -h $DOCKER_IP -p $port sentinel set redis-master client-reconfig-script /etc/redis/reconfig.sh
+
+    log "Redis sentinel $name monitors $nodename ($nodeip:6379)"
+    ;;
+
+  "name")
+    echo $name
+    ;;
+
+esac
