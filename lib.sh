@@ -7,7 +7,7 @@ log() {
 }
 
 d_ip() {
-  docker inspect --format '{{ .NetworkSettings.IPAddress }}' "$1"
+  docker inspect --format '{{ .NetworkSettings.IPAddress }}' "$1" | tr -d '\n\r'
 }
 
 d_rma() {
@@ -22,9 +22,15 @@ redis-cli() {
 get_name() {
   local prefix="$1"
   local id="$2"
-  [[ "$id" == ${prefix}.* ]] && echo "$id" || echo "${prefix}.${id}"
+  [[ "$id" == ${prefix}.* ]] && echo -n "$id" || echo -n "${prefix}.${id}"
+}
+
+get_id() {
+  local prefix="${1}."
+  local name="$2"
+  echo -n "${name#$prefix}"
 }
 
 etcdctl() {
-  docker run -t --rm planitar/etcd /etcdctl "$@"
+  docker run -t --rm --net host planitar/etcd /etcdctl "$@" | tr -d '\n\r'
 }

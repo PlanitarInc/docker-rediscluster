@@ -4,13 +4,14 @@
 
 # sentinel <CMD> <ID> [options]
 cmd="$1"; shift
-id="$1"; shift
-name="$(get_name sentinel "$id")"
+id="$(get_id sentinel $1)"
+name="$(get_name sentinel $1)"; shift
 port=$[ 63790 + $id ]
 
 case "$cmd" in
   "add")
     docker run --name $name -d -p $port:26379 \
+      -v `pwd`:/script \
       planitar/redis redis-sentinel /etc/redis/sentinel.conf \
         --sentinel announce-ip $DOCKER_IP \
 	--sentinel announce-port $port
@@ -40,7 +41,7 @@ case "$cmd" in
     redis-cli -h $DOCKER_IP -p $port sentinel set redis-master down-after-milliseconds 1000
     redis-cli -h $DOCKER_IP -p $port sentinel set redis-master failover-timeout 1000
     redis-cli -h $DOCKER_IP -p $port sentinel set redis-master parallel-syncs 1
-    redis-cli -h $DOCKER_IP -p $port sentinel set redis-master client-reconfig-script /etc/redis/reconfig.sh
+    redis-cli -h $DOCKER_IP -p $port sentinel set redis-master client-reconfig-script /script/reconfig.sh
 
     log "Redis sentinel $name monitors $nodename ($nodeip:6379)"
     ;;
@@ -49,4 +50,14 @@ case "$cmd" in
     echo $name
     ;;
 
+  "status")
+    if docker inspect $name >/dev/null 2>&1; then
+      printf "%s (%s:%d)\n" $name $(d_ip $name) $port
+    else
+      printf "%s (DOWN)\n" $name
+    fi
+    ;;
+
 esac
+
+# vim: ft=sh sw=2 et :

@@ -4,8 +4,8 @@
 
 # node <CMD> <ID> [options]
 cmd="$1"; shift
-id="$1"; shift
-name="$(get_name redis "$id")"
+id="$(get_id redis $1)"
+name="$(get_name redis $1)"; shift
 
 case "$cmd" in
   "add")
@@ -41,4 +41,19 @@ case "$cmd" in
     echo $name
     ;;
 
+  "ip")
+    d_ip $name
+    ;;
+
+  "status")
+    masterip="$1"
+    if docker inspect $name >/dev/null 2>&1; then
+      printf "%s (%s:%d)\n" $name $(d_ip $name) 6379
+    else
+      printf "%s (DOWN)\n" $name
+    fi
+    ;;
+
 esac
+
+# vim: ft=sh sw=2 et :

@@ -1,0 +1,94 @@
+#/bin/bash
+
+. ./lib.sh
+
+cmd="${1:-status}"; shift
+
+get_master_id() {
+  cnt=$(etcdctl get /config/redis/node_cnt)
+  master_ip=$(etcdctl get /config/redis/master_ip)
+  for i in $(seq 0 $[ $cnt - 1 ]); do
+    [ "$(./node ip redis.$i)" == $master_ip ] || continue
+    # etcdctl prints the value back
+    etcdctl set /config/redis/master_id redis.$i
+    break
+  done
+}
+
+case "$cmd" in
+  up)
+    ./node add redis.0
+    ./node add redis.1 redis.0
+
+    etcdctl set /config/redis/master_id redis.0
+    etcdctl set /config/redis/master_ip $(d_ip redis.0)
+    etcdctl set /config/redis/node_cnt 2
+
+    ./sentinel add sentinel.0 redis.0
+    ./sentinel add sentinel.1 redis.0
+    ./sentinel add sentinel.2 redis.0
+
+    etcdctl set /config/redis/sentinel_cnt 3
+    ;;
+
+  down)
+    cnt=$(etcdctl get /config/redis/sentinel_cnt)
+    for i in $(seq 0 $cnt); do
+      ./sentinel rem sentinel.$i
+    done
+    etcdctl rm /config/redis/sentinel_cnt
+    cnt=$(etcdctl get /config/redis/node_cnt)
+    for i in $(seq 0 $cnt); do
+      ./node rem redis.$i
+    done
+    etcdctl rm /config/redis/node_cnt
+    etcdctl rm /config/redis/master_id
+    etcdctl rm /config/redis/master_ip
+    ;;
+
+  add)
+    master=$(get_master_id)
+    case "$1" in
+      n|no|nod|node)
+	cnt=$(etcdctl get /config/redis/node_cnt)
+	etcdctl set /config/redis/node_cnt $[ $cnt + 1 ]
+	./node add redis.$cnt $master
+	;;
+      s|se|sen|sent|senti|sentin|sentine|sentinel)
+	cnt=$(etcdctl get /config/redis/sentinel_cnt)
+	etcdctl set /config/redis/sentinel_cnt $[ $cnt + 1 ]
+	./sentinel add sentinel.$cnt $master
+	;;
+    esac
+    ;;
+
+  status)
+    master=$(get_master_id)
+    log "M=$master"
+
+    if [ -z "$master" ]; then
+      echo "Cluster is down"
+      exit 0
+    fi
+
+    cnt="$(etcdctl get /config/redis/node_cnt)"
+    echo "Nodes (# = $cnt):"
+    for i in $(seq 0 $[ $cnt - 1 ]); do
+      status=$(./node status $i)
+      if [ "$master" != redis.$i ]; then
+	echo "            $status"
+      else
+	echo "   (master) $status"
+      fi
+    done
+
+    cnt=$(etcdctl get /config/redis/sentinel_cnt)
+    echo "Sentinels (# = $cnt):"
+    for i in $(seq 0 $[ $cnt - 1 ]); do
+      status=$(./sentinel status $i)
+      echo "            $status"
+    done
+    ;;
+esac
+
+# vim: ft=sh sw=2 et :
