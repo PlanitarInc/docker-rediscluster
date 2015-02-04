@@ -46,6 +46,10 @@ case "$cmd" in
     log "Redis sentinel $name monitors $nodename ($nodeip:6379)"
     ;;
 
+  "cli")
+    redis-cli -h $(d_ip $name) -p $port "$@"
+    ;;
+
   "name")
     echo $name
     ;;

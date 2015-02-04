@@ -12,7 +12,7 @@ case "$cmd" in
     docker run --name $name -t -d -i planitar/redis
     log "Redis node created: $name ($(d_ip $name):6379)"
     if [ $# -gt 0 ]; then
-      ./node join $id $1
+      ./node slaveof $id $1
     fi
     ;;
 
@@ -26,7 +26,7 @@ case "$cmd" in
     fi
     ;;
 
-  "join")
+  "slaveof")
     mastername=$(get_name redis $1)
     masterip=$(d_ip $mastername)
     ./node cli $id slaveof $masterip 6379
