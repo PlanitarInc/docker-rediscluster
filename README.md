@@ -169,3 +169,37 @@ parallel-syncs 1
     ```sh
     ./sentinel status <id|name>
     ```
+
+### Cluster without etcd
+
+You can work directly with `node` and `sentinel` scripts in order to setup
+a cluster (in case you don't want to use `etcd`).
+
+##### Up
+
+```sh
+# create two redis instances
+# - redis.0 is master
+# - redis.1 is slave of redis.0
+./node add redis.0
+./node add redis.1 redis.0
+
+# start up the sentinels
+# - sentinel.0 monitors redis.0
+# - sentinel.1 monitors redis.0
+# - sentinel.2 monitors redis.0
+./sentinel add sentinel.0 redis.0
+./sentinel add sentinel.1 redis.0
+./sentinel add sentinel.2 redis.0
+```
+
+##### Down
+
+```sh
+./sentinel rem sentinel.0
+./sentinel rem sentinel.1
+./sentinel rem sentinel.2
+
+./node rem node.0
+./node rem node.1
+```
