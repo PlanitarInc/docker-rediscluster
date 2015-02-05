@@ -9,8 +9,8 @@ get_master_id() {
   master_ip=$(etcdctl get /config/redis/master_ip)
   for i in $(seq 0 $[ $cnt - 1 ]); do
     [ "$(./node ip redis.$i)" == $master_ip ] || continue
-    # etcdctl prints the value back
-    etcdctl set /config/redis/master_id redis.$i
+    etcdctl set /config/redis/master_id redis.$i >/dev/null 2>&1
+    echo -n redis.$i
     break
   done
 }
@@ -68,14 +68,12 @@ case "$cmd" in
     ;;
 
   status)
-    master=$(get_master_id)
-    log "M=$master"
-
-    if [ -z "$master" ]; then
+    if ! etcdctl get /config/redis/master_id >/dev/null 2>&1; then
       echo "Cluster is down"
       exit 0
     fi
 
+    master=$(get_master_id)
     cnt="$(etcdctl get /config/redis/node_cnt)"
     echo "Nodes (# = $cnt):"
     for i in $(seq 0 $[ $cnt - 1 ]); do
@@ -86,6 +84,7 @@ case "$cmd" in
 	echo "   (master) $status"
       fi
     done
+    [ -z "$master" ] && echo "  NOTE: master is not known right now, try run status again"
 
     cnt=$(etcdctl get /config/redis/sentinel_cnt)
     echo "Sentinels (# = $cnt):"
