@@ -32,15 +32,20 @@ case "$cmd" in
     ;;
 
   down)
-    cnt=$(etcdctl get /config/redis/sentinel_cnt)
-    for i in $(seq 0 $cnt); do
-      ./sentinel rem sentinel.$i
-    done
-    etcdctl rm /config/redis/sentinel_cnt
-    cnt=$(etcdctl get /config/redis/node_cnt)
-    for i in $(seq 0 $cnt); do
-      ./node rem redis.$i
-    done
+    if [ "$1" == "-f" ]; then
+      ./sentinel rem all
+      ./node rem all
+    else
+      cnt=$(etcdctl get /config/redis/sentinel_cnt)
+      for i in $(seq 0 $cnt); do
+        ./sentinel rem sentinel.$i
+      done
+      etcdctl rm /config/redis/sentinel_cnt
+      cnt=$(etcdctl get /config/redis/node_cnt)
+      for i in $(seq 0 $cnt); do
+        ./node rem redis.$i
+      done
+    fi
     etcdctl rm /config/redis/node_cnt
     etcdctl rm /config/redis/master_id
     etcdctl rm /config/redis/master_ip

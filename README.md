@@ -43,8 +43,11 @@ parallel-syncs 1
 - remove the cluster:
 
     ```sh
-    ./cluster down
+    ./cluster down [-f]
     ```
+
+  pass `-f` to remove any `redis.[0-9]+` and `sentinel.[0-9]+` docker
+  containers.
 
 - print status of the cluster:
 
