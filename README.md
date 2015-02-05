@@ -84,8 +84,8 @@ parallel-syncs 1
     ./node add <id|name> [<master-id|master-name>]
     ```
 
-  `id|name` - the id (integer) or name (format `redis.<id>`of the new node).
-  `master-id|master-name` set the new node a slave of given master (optional).
+  `<id|name>` - the id (integer) or name (format `redis.<id>`of the new node).
+  `<master-id|master-name>` set the new node a slave of given master (optional).
 
 - remover a node:
 
@@ -105,8 +105,8 @@ parallel-syncs 1
     ./node cli <id|name> [<command>]
     ```
 
-if no command is specified, an interactive session is open
-(the same behavior as of `redis-cli`).
+  if no command is specified, an interactive session is open
+  (the same behavior as of `redis-cli`).
 
 - get the name of a node:
 
@@ -155,8 +155,8 @@ if no command is specified, an interactive session is open
     ./sentinel cli <id|name> [<command>]
     ```
 
-if no command is specified, an interactive session is open
-(the same behavior as of `redis-cli`).
+  if no command is specified, an interactive session is open
+  (the same behavior as of `redis-cli`).
 
 - get the name of a sentinel:
 
